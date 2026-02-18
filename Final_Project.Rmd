@@ -1,0 +1,310 @@
+---
+title: "FinalProject"
+author: "Alex Nassif"
+date: "2025-12-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(infer)
+library(broom)
+library(gridExtra)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+students <- read.csv("student-mat.csv", sep = ";")
+
+
+students <- students %>%
+mutate(
+    sex = factor(sex),
+    Pstatus = factor(Pstatus),
+    famsize = factor(famsize),
+    romantic = factor(romantic),
+    activities = factor(activities),
+    internet = factor(internet)
+)
+students %>% 
+  select(sex, address, famsize, schoolsup, famsup, higher, romantic, G1, G2, G3)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r Final-Grades, echo=FALSE}
+# Distribution of final grades
+ggplot(students, aes(x = G3)) +
+geom_histogram(bins = 20) +
+labs(title = "Distribution of Final Grades", x = "Final Grade", y = "Count")
+```
+
+```{r Gender-Grades, echo=FALSE}
+ggplot(students, aes(x = sex, y = G3)) +
+  geom_boxplot() +
+  labs(title = "Final Grade by Gender", x = "Gender", y = "Final Grade")
+
+ggplot(students, aes(x = Pstatus, y = G3)) +
+  geom_boxplot() +
+  labs(title = "Final Grade by Parents' Cohabitation Status",
+       x = "Parents Living Together (T) or Apart (A)",
+       y = "Final Grade")
+
+ggplot(students, aes(x = famsize, y = G3)) +
+  geom_boxplot() +
+  labs(title = "Final Grade by Family Size",
+       x = "Family Size",
+       y = "Final Grade")
+
+ggplot(students, aes(x = romantic, y = G3)) +
+  geom_boxplot() +
+  labs(title = "Final Grade by Romantic Relationship Status",
+       x = "In a Romantic Relationship",
+       y = "Final Grade")
+
+ggplot(students, aes(x = activities, y = G3)) +
+  geom_boxplot() +
+  labs(title = "Final Grade by Extracurricular Activities",
+       x = "Participates in Activities",
+       y = "Final Grade")
+
+ggplot(students, aes(x = internet, y = G3)) +
+  geom_boxplot() +
+  labs(title = "Final Grade by Internet Access at Home",
+       x = "Internet Access",
+       y = "Final Grade")
+
+ggplot(students, aes(x = factor(goout), y = G3)) +
+  geom_boxplot() +
+  labs(title = "Final Grade by Frequency of Going Out",
+       x = "Going Out Frequency (1 = Low, 5 = High)",
+       y = "Final Grade")
+```
+
+```{r Conditional Probabilities, echo=TRUE}
+mean_G3 <- mean(students$G3)
+
+students <- students %>%
+  mutate(above_mean = G3 > mean_G3)
+
+mean_G3
+
+median_G3 <- median(students$G3)
+median_G3
+
+
+cp_pstatus <- students %>%
+  group_by(Pstatus) %>%
+  summarize(
+    prob_above_mean = mean(above_mean),
+    n = n()
+  )
+
+cp_pstatus
+
+cp_famsize <- students %>%
+  group_by(famsize) %>%
+  summarize(
+    prob_above_mean = mean(above_mean),
+    n = n()
+  )
+
+cp_famsize
+
+cp_sex <- students %>%
+  group_by(sex) %>%
+  summarize(
+    prob_above_mean = mean(above_mean),
+    n = n()
+  )
+
+cp_sex
+
+cp_romantic <- students %>%
+  group_by(romantic) %>%
+  summarize(
+    prob_above_mean = mean(above_mean),
+    n = n()
+  )
+
+cp_romantic
+
+cp_activities <- students %>%
+  group_by(activities) %>%
+  summarize(
+    prob_above_mean = mean(above_mean),
+    n = n()
+  )
+
+cp_activities
+
+cp_goout <- students %>%
+  group_by(goout) %>%
+  summarize(
+    prob_above_mean = mean(above_mean),
+    n = n()
+  )
+
+cp_goout
+
+cp_internet <- students %>%
+  group_by(internet) %>%
+  summarize(
+    prob_above_mean = mean(above_mean),
+    n = n()
+  )
+
+cp_internet
+
+
+
+```
+
+```{r Boostrap+CLT, echo = TRUE}
+n <- 30
+B <- 5000
+
+internet_yes <- students %>% filter(internet == "yes") %>% pull(G3)
+internet_no  <- students %>% filter(internet == "no")  %>% pull(G3)
+
+clt_yes <- numeric(B)
+clt_no  <- numeric(B)
+
+for (b in 1:B) {
+  clt_yes[b] <- mean(sample(internet_yes, n, replace = TRUE))
+  clt_no[b]  <- mean(sample(internet_no,  n, replace = TRUE))
+}
+
+hist(clt_yes,
+     breaks = 40,
+     main = "CLT: Mean G3 (Internet = Yes)",
+     xlab = "Sample Mean")
+
+abline(v = mean(internet_yes), col = "red", lwd = 2)
+mean(internet_yes)
+
+hist(clt_no,
+     breaks = 40,
+     main = "CLT: Mean G3 (Internet = No)",
+     xlab = "Sample Mean")
+
+abline(v = mean(internet_no), col = "red", lwd = 2)
+mean(internet_no)
+
+low_goout  <- students %>% filter(goout <= 2) %>% pull(G3)
+high_goout <- students %>% filter(goout >= 4) %>% pull(G3)
+
+clt_low <- numeric(B)
+clt_high <- numeric(B)
+
+for (b in 1:B) {
+  clt_low[b]  <- mean(sample(low_goout,  n, replace = TRUE))
+  clt_high[b] <- mean(sample(high_goout, n, replace = TRUE))
+}
+
+hist(clt_low,
+     breaks = 40,
+     main = "CLT: Mean G3 (Low Going Out)",
+     xlab = "Sample Mean")
+
+abline(v = mean(low_goout), col = "red", lwd = 2)
+mean(low_goout)
+
+hist(clt_high,
+     breaks = 40,
+     main = "CLT: Mean G3 (High Going Out)",
+     xlab = "Sample Mean")
+
+abline(v = mean(high_goout), col = "red", lwd = 2)
+mean(high_goout)
+
+
+```
+
+```{r BootStrap, echo=TRUE}
+x <- students$goout
+y <- students$G3
+
+b1 <- sum((x - mean(x)) * (y - mean(y))) / sum((x - mean(x))^2)
+b0 <- mean(y) - b1 * mean(x)
+
+c(b0 = b0, b1 = b1)
+
+lm_goout <- lm(G3 ~ goout, data = students)
+coef(lm_goout)
+
+lm_internet <- lm(G3 ~ internet, data = students)
+summary(lm_internet)
+
+set.seed(702)
+
+x <- students$goout
+y <- students$G3
+
+fit_obs <- lm(y ~ x)
+b1_obs <- coef(fit_obs)[2]
+
+B <- 5000
+b1_null <- numeric(B)
+
+for (b in 1:B) {
+  y_perm <- sample(y)
+  b1_null[b] <- coef(lm(y_perm ~ x))[2]
+}
+
+p_val <- mean(abs(b1_null) >= abs(b1_obs))
+c(observed_slope = b1_obs, p_value = p_val)
+
+set.seed(702)
+
+# Predictor: internet access (categorical)
+x_int <- students$internet  # should be a factor
+y <- students$G3
+
+# Observed difference in means
+fit_obs_int <- lm(y ~ x_int)
+b1_obs_int <- coef(fit_obs_int)[2]  # difference in G3 between "yes" and "no"
+
+# Permutation test
+B <- 5000
+b1_null_int <- numeric(B)
+
+for (b in 1:B) {
+  y_perm <- sample(y)
+  b1_null_int[b] <- coef(lm(y_perm ~ x_int))[2]
+}
+
+# Calculate p-value
+p_val_int <- mean(abs(b1_null_int) >= abs(b1_obs_int))
+
+c(observed_difference = b1_obs_int, p_value = p_val_int)
+
+
+hist(b1_null, breaks = 40, col = "grey85",
+     main = "Null Distribution of Slope (Go Out)",
+     xlab = "Slope")
+abline(v = b1_obs, col = "red", lwd = 3)
+
+hist(b1_null_int, breaks = 40, col = "grey85",
+     main = "Null Distribution of Slope (Internet)",
+     xlab = "Slope")
+abline(v = b1_obs_int, col = "red", lwd = 3)
+
+anova(lm_internet, lm_goout)
+summary(lm_internet)$r.squared
+summary(lm_goout)$r.squared
+
+par(mfrow = c(2,2))
+plot(lm_goout)
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
