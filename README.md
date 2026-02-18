@@ -2,7 +2,7 @@ This project analyzes student academic performance using the student-mat.csv dat
 
 The analysis includes:
 
-Data cleaning and preprocessing
+Data cleaning and preprocessing \n
 Exploratory data visualization
 Conditional probability analysis
 Central Limit Theorem (CLT) simulations
